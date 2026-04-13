@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#E8611A">
+<meta name="description" content="Mapa interactivo de ingredientes del menú de tortas">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Tortas">
+<meta property="og:title" content="Mapa de Tortas">
+<meta property="og:description" content="Mapa interactivo de ingredientes del menú de tortas">
+<meta property="og:type" content="website">
+<title>Mapa de Tortas</title>
+<link id="manifest-link" rel="manifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+--bg:#FFF8F0;--bg2:#FFF0E0;--bg3:#FFE8CC;
+--fg:#1A1A1A;--fg2:#3D2B1F;--fg3:#6B4C3B;
+--acc:#E8611A;--acc2:#F5A623;--acc3:#C44E10;
+--border:#E8D5C0;--border2:#D4B896;
+--check:#27AE60;--none:#BDBDBD;
+--shadow:rgba(232,97,26,0.18);
+--card:#FFFAF5;
+--section-bg:#FFF0E0;
+--section-fg:#C44E10;
+--radius:14px;--radius-sm:8px;
+--trans:all 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+[data-theme="dark"]{
+--bg:#0F0F0F;--bg2:#1A1208;--bg3:#251A0A;
+--fg:#F5F0E8;--fg2:#E8D8C0;--fg3:#B8A090;
+--acc:#FF6B35;--acc2:#FFB347;--acc3:#E85520;
+--border:#2A1E10;--border2:#3D2E1A;
+--check:#2ECC71;--none:#555;
+--shadow:rgba(255,107,53,0.22);
+--card:#1A1208;
+--section-bg:#1F1508;
+--section-fg:#FFB347;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth;font-size:16px}
+body{
+background:var(--bg);color:var(--fg);
+font-family:'DM Sans',sans-serif;
+min-height:100vh;
+background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+transition:var(--trans);
+padding-bottom:env(safe-area-inset-bottom);
+}
+header{
+background:linear-gradient(135deg,var(--acc) 0%,var(--acc2) 100%);
+padding:16px 16px calc(16px + env(safe-area-inset-top));
+padding-top:calc(16px + env(safe-area-inset-top));
+position:sticky;top:0;z-index:100;
+box-shadow:0 4px 20px var(--shadow);
+}
+.header-inner{max-width:640px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-icon{width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',cursive;font-size:22px;color:#fff;border:1.5px solid rgba(255,255,255,0.35);}
+.brand-text{display:flex;flex-direction:column;line-height:1}
+.brand-title{font-family:'Bebas Neue',cursive;font-size:22px;color:#fff;letter-spacing:1px;}
+.brand-sub{font-size:10px;color:rgba(255,255,255,0.8);font-weight:500;letter-spacing:0.5px;text-transform:uppercase}
+.header-actions{display:flex;align-items:center;gap:8px}
+#darkToggle{background:rgba(255,255,255,0.2);border:1.5px solid rgba(255,255,255,0.35);color:#fff;border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:17px;transition:var(--trans);}
+#darkToggle:hover{background:rgba(255,255,255,0.35);transform:rotate(20deg)}
+#darkToggle.spin{animation:spinIcon 0.4s ease}
+@keyframes spinIcon{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+#offlineBanner{display:none;background:#333;color:#fff;text-align:center;padding:8px 16px;font-size:13px;font-weight:500;position:sticky;top:72px;z-index:99;}
+#offlineBanner.show{display:block;animation:slideDown 0.3s ease}
+@keyframes slideDown{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}
+main{max-width:640px;margin:0 auto;padding:16px}
+.search-wrap{position:relative;margin-bottom:12px}
+.search-wrap input{width:100%;padding:12px 44px 12px 42px;border:2px solid var(--border);border-radius:var(--radius);background:var(--card);color:var(--fg);font-family:'DM Sans',sans-serif;font-size:15px;outline:none;transition:var(--trans);}
+.search-wrap input:focus{border-color:var(--acc);box-shadow:0 0 0 3px var(--shadow)}
+.search-wrap input::placeholder{color:var(--fg3)}
+.search-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--fg3);font-size:17px;pointer-events:none;}
+#clearSearch{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:var(--acc);color:#fff;border:none;border-radius:50%;width:24px;height:24px;cursor:pointer;font-size:13px;display:none;align-items:center;justify-content:center;transition:var(--trans);font-weight:700;}
+#clearSearch.show{display:flex}
+#clearSearch:hover{background:var(--acc3);transform:translateY(-50%) scale(1.1)}
+.filter-label{font-size:11px;font-weight:600;color:var(--fg3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px}
+.filter-chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px}
+.chip{padding:7px 13px;border-radius:20px;border:2px solid var(--border2);background:var(--card);color:var(--fg2);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:var(--trans);display:flex;align-items:center;gap:5px;user-select:none;}
+.chip:hover{border-color:var(--acc);color:var(--acc)}
+.chip.active{background:var(--acc);border-color:var(--acc);color:#fff;box-shadow:0 2px 10px var(--shadow);}
+.chip:active{transform:scale(0.97)}
+.chip-icon{font-size:14px}
+.controls-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:8px;flex-wrap:wrap}
+.counter{font-size:13px;color:var(--fg3);font-weight:500;background:var(--bg2);padding:5px 10px;border-radius:20px;border:1px solid var(--border);}
+.counter span{color:var(--acc);font-weight:700}
+#clearAll{padding:7px 14px;border-radius:20px;background:transparent;border:2px solid var(--acc);color:var(--acc);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:var(--trans);display:none;}
+#clearAll.show{display:block}
+#clearAll:hover{background:var(--acc);color:#fff}
+.table-wrap{overflow-x:auto;overflow-y:auto;max-height:calc(100vh - 200px);border-radius:var(--radius);box-shadow:0 4px 24px var(--shadow);border:1px solid var(--border);-webkit-overflow-scrolling:touch;}
+table{width:100%;border-collapse:collapse;min-width:460px}
+thead{background:linear-gradient(135deg,var(--acc) 0%,var(--acc3) 100%);position:sticky;top:0;z-index:10;}
+thead th{padding:12px 10px;text-align:center;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;color:#fff;letter-spacing:0.5px;text-transform:uppercase;cursor:pointer;user-select:none;white-space:nowrap;border-right:1px solid rgba(255,255,255,0.15);transition:background 0.2s;}
+thead th:first-child{text-align:left;padding-left:14px;min-width:150px}
+thead th:last-child{border-right:none}
+thead th:hover{background:rgba(255,255,255,0.12)}
+.th-inner{display:flex;align-items:center;justify-content:center;gap:4px}
+thead th:first-child .th-inner{justify-content:flex-start}
+.sort-ind{font-size:11px;opacity:0.7}
+.sort-ind.active{opacity:1;color:#FFE066}
+tbody tr{background:var(--card);transition:background 0.2s;animation:rowIn 0.35s ease both;}
+tbody tr:nth-child(even){background:var(--bg2)}
+tbody tr:hover{background:var(--bg3)}
+@keyframes rowIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+tbody td{padding:11px 10px;text-align:center;border-right:1px solid var(--border);border-bottom:1px solid var(--border);font-size:13px;}
+tbody td:first-child{text-align:left;padding-left:14px;font-weight:500;color:var(--fg);font-size:13px;border-right:2px solid var(--border2);}
+tbody td:last-child{border-right:none}
+.cell-check{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:rgba(39,174,96,0.12);color:var(--check);font-size:15px;font-weight:700;animation:bounce 0.4s cubic-bezier(0.36,0.07,0.19,0.97) both;will-change:transform;}
+.cell-none{color:var(--none);font-size:16px;opacity:0.5}
+@keyframes bounce{0%{transform:scale(0)}60%{transform:scale(1.2)}80%{transform:scale(0.92)}100%{transform:scale(1)}}
+.section-row td{background:var(--section-bg);color:var(--section-fg);font-family:'Bebas Neue',cursive;font-size:15px;letter-spacing:1.5px;padding:9px 14px;border-bottom:2px solid var(--acc);text-align:left;}
+.empty{text-align:center;padding:48px 20px;color:var(--fg3);}
+.empty-icon{font-size:48px;margin-bottom:12px}
+.empty-title{font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:1px;margin-bottom:6px;color:var(--fg2)}
+.empty-sub{font-size:14px}
+footer{text-align:center;padding:20px 16px calc(20px + env(safe-area-inset-bottom));color:var(--fg3);font-size:12px;border-top:1px solid var(--border);margin-top:20px;max-width:640px;margin-left:auto;margin-right:auto;}
+footer strong{color:var(--acc)}
+#installBtn{display:none;position:fixed;bottom:calc(20px + env(safe-area-inset-bottom));right:16px;background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;border:none;border-radius:50px;padding:12px 18px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 4px 20px var(--shadow);transition:var(--trans);z-index:200;display:none;align-items:center;gap:7px;}
+#installBtn.show{display:flex}
+#installBtn:hover{transform:translateY(-2px);box-shadow:0 6px 28px var(--shadow)}
+:focus-visible{outline:2px solid var(--acc);outline-offset:3px}
+main{padding-bottom:90px!important}
+#aiModeBtn{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#6C3FF5,#A855F7);color:#fff;border:none;border-radius:50px;padding:14px 18px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 6px 28px rgba(108,63,245,0.4);transition:var(--trans);z-index:200;display:flex;align-items:center;gap:7px;}
+#aiModeBtn:hover{transform:translateX(-50%) translateY(-2px)}
+#aiModeBtn:active{transform:translateX(-50%) scale(0.97)}
+#aiModal{position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);z-index:400;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.3s ease;padding:16px;}
+#aiModal.show{opacity:1;pointer-events:auto}
+.ai-panel{background:var(--card);border:2px solid var(--border);border-radius:24px;width:100%;max-width:400px;max-height:85vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,0.35);transform:translateY(30px) scale(0.96);transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1);position:relative;}
+#aiModal.show .ai-panel{transform:translateY(0) scale(1)}
+.ai-close-btn{position:absolute;top:12px;right:12px;background:var(--bg2);border:1px solid var(--border);color:var(--fg3);border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;z-index:10;transition:var(--trans);}
+.ai-close-btn:hover{background:var(--bg3);color:var(--fg)}
+.ai-tabs{display:flex;border-bottom:2px solid var(--border);border-radius:22px 22px 0 0;overflow:hidden;}
+.ai-tab{flex:1;padding:14px 8px;background:var(--bg2);border:none;color:var(--fg3);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:var(--trans);display:flex;align-items:center;justify-content:center;gap:6px;}
+.ai-tab.active{background:linear-gradient(135deg,#6C3FF5,#A855F7);color:#fff;}
+.ai-tab:hover:not(.active){color:var(--fg)}
+.ai-body{padding:20px}
+.ai-listen-ring{width:88px;height:88px;border-radius:50%;background:linear-gradient(135deg,#6C3FF5,#A855F7);display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 16px;cursor:pointer;transition:var(--trans);box-shadow:0 6px 28px rgba(108,63,245,0.4);border:none;}
+.ai-listen-ring.listening{animation:ai-pulse 1.4s ease infinite;}
+@keyframes ai-pulse{0%{box-shadow:0 0 0 0 rgba(108,63,245,0.5),0 6px 28px rgba(108,63,245,0.4)}70%{box-shadow:0 0 0 20px rgba(108,63,245,0),0 6px 28px rgba(108,63,245,0.4)}100%{box-shadow:0 0 0 0 rgba(108,63,245,0),0 6px 28px rgba(108,63,245,0.4)}}
+.ai-hint{text-align:center;color:var(--fg3);font-size:13px;margin-bottom:16px;line-height:1.5}
+.ai-transcript-box{min-height:40px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px;font-size:14px;color:var(--fg2);margin-bottom:12px;font-style:italic;}
+.ai-response-box{background:linear-gradient(135deg,rgba(108,63,245,0.07),rgba(168,85,247,0.07));border:1.5px solid rgba(108,63,245,0.2);border-radius:14px;padding:16px;}
+.ai-response-box .ai-torta-name{font-family:'Bebas Neue',cursive;font-size:22px;color:#6C3FF5;letter-spacing:1px;margin-bottom:10px;}
+.ai-response-box .ai-ing-chip{display:inline-block;background:rgba(108,63,245,0.12);color:#6C3FF5;border-radius:8px;padding:3px 10px;margin:3px 3px 3px 0;font-weight:600;font-size:13px;}
+.ai-response-box .ai-no-ing{display:inline-block;background:rgba(189,189,189,0.15);color:var(--fg3);border-radius:8px;padding:3px 10px;margin:3px 3px 3px 0;font-size:13px;text-decoration:line-through;opacity:0.6;}
+.ai-response-box p{font-size:14px;color:var(--fg);line-height:1.6}
+.ai-speak-btn{margin-top:12px;width:100%;background:linear-gradient(135deg,#6C3FF5,#A855F7);color:#fff;border:none;border-radius:30px;padding:11px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:var(--trans);display:none;align-items:center;justify-content:center;gap:6px;}
+.ai-speak-btn.show{display:flex}
+.ai-speak-btn:hover{opacity:0.9;transform:translateY(-1px)}
+.dict-ring{width:88px;height:88px;border-radius:50%;background:linear-gradient(135deg,var(--acc),var(--acc2));display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 16px;cursor:pointer;transition:var(--trans);box-shadow:0 6px 28px rgba(232,97,26,0.4);border:none;}
+.dict-ring.listening{animation:dict-pulse 1.4s ease infinite}
+@keyframes dict-pulse{0%{box-shadow:0 0 0 0 rgba(232,97,26,0.5),0 6px 28px rgba(232,97,26,0.4)}70%{box-shadow:0 0 0 20px rgba(232,97,26,0),0 6px 28px rgba(232,97,26,0.4)}100%{box-shadow:0 0 0 0 rgba(232,97,26,0),0 6px 28px rgba(232,97,26,0.4)}}
+.dict-raw{width:100%;min-height:90px;max-height:160px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--fg);resize:vertical;outline:none;}
+.dict-raw:focus{border-color:var(--acc);box-shadow:0 0 0 3px var(--shadow)}
+.dict-actions{display:flex;gap:8px;margin:10px 0}
+.dict-btn{flex:1;padding:10px;border-radius:30px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:var(--trans);border:none;}
+.dict-btn-clear{background:var(--bg3);color:var(--fg3)}
+.dict-btn-summarize{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;box-shadow:0 4px 16px var(--shadow);}
+.dict-btn-summarize:disabled{opacity:0.5;cursor:not-allowed}
+.dict-btn-summarize:hover:not(:disabled){transform:translateY(-1px)}
+.dict-summary{background:linear-gradient(135deg,rgba(232,97,26,0.07),rgba(245,166,35,0.07));border:1.5px solid rgba(232,97,26,0.2);border-radius:14px;padding:16px;margin-top:4px;}
+.dict-summary h4{font-family:'Bebas Neue',cursive;font-size:16px;color:var(--acc);letter-spacing:1px;margin-bottom:8px;}
+.dict-summary ul{list-style:none;padding:0;}
+.dict-summary ul li{font-size:13px;color:var(--fg2);padding:5px 0 5px 20px;position:relative;border-bottom:1px solid var(--border);}
+.dict-summary ul li:last-child{border-bottom:none}
+.dict-summary ul li::before{content:'→';color:var(--acc);position:absolute;left:0;font-weight:700;}
+.dict-summary .dict-corrected{font-size:12px;color:var(--fg3);font-style:italic;margin-top:10px;padding-top:8px;border-top:1px solid var(--border);}
+.dict-speak-btn{margin-top:10px;width:100%;background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;border:none;border-radius:30px;padding:10px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:var(--trans);display:none;align-items:center;justify-content:center;gap:6px;}
+.dict-speak-btn.show{display:flex}
+.ai-loading{display:flex;align-items:center;justify-content:center;gap:6px;padding:16px;color:var(--fg3);font-size:13px;}
+.ai-loading-dot{width:7px;height:7px;border-radius:50%;background:var(--acc);animation:dotBounce 1.2s ease infinite;}
+.ai-loading-dot:nth-child(2){animation-delay:0.2s;background:#6C3FF5}
+.ai-loading-dot:nth-child(3){animation-delay:0.4s;background:var(--acc2)}
+@keyframes dotBounce{0%,80%,100%{transform:scale(0)}40%{transform:scale(1)}}
+
+/* ADMIN BUTTON */
+#adminBtn{
+position:fixed;bottom:calc(24px + env(safe-area-inset-bottom));right:16px;
+background:linear-gradient(135deg,#1A7F5A,#27AE60);
+color:#fff;border:none;border-radius:50%;
+width:50px;height:50px;
+font-size:20px;cursor:pointer;
+box-shadow:0 6px 24px rgba(26,127,90,0.45);
+transition:var(--trans);z-index:200;
+display:flex;align-items:center;justify-content:center;
+}
+#adminBtn:hover{transform:translateY(-2px) scale(1.07)}
+#adminBtn:active{transform:scale(0.95)}
+
+/* ADMIN MODAL */
+#adminModal{position:fixed;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(6px);z-index:500;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.3s ease;padding:16px;}
+#adminModal.show{opacity:1;pointer-events:auto}
+.admin-panel{background:var(--card);border:2px solid var(--border);border-radius:24px;width:100%;max-width:460px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,0.4);transform:translateY(30px) scale(0.96);transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1);position:relative;}
+#adminModal.show .admin-panel{transform:translateY(0) scale(1)}
+.admin-header{background:linear-gradient(135deg,#1A7F5A,#27AE60);border-radius:22px 22px 0 0;padding:18px 20px 16px;display:flex;align-items:center;justify-content:space-between;}
+.admin-header h2{font-family:'Bebas Neue',cursive;font-size:22px;color:#fff;letter-spacing:1px;margin:0;display:flex;align-items:center;gap:8px;}
+.admin-close-btn{background:rgba(255,255,255,0.2);border:1.5px solid rgba(255,255,255,0.35);color:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;transition:var(--trans);}
+.admin-close-btn:hover{background:rgba(255,255,255,0.35)}
+.admin-body{padding:18px}
+.admin-section-title{font-family:'Bebas Neue',cursive;font-size:15px;letter-spacing:1px;color:#1A7F5A;margin-bottom:10px;margin-top:4px;}
+.admin-form{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:16px;}
+.admin-form label{display:block;font-size:11px;font-weight:700;color:var(--fg3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:4px;}
+.admin-form input[type=text],.admin-form select{width:100%;padding:9px 12px;border:1.5px solid var(--border2);border-radius:var(--radius-sm);background:var(--card);color:var(--fg);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:var(--trans);margin-bottom:10px;}
+.admin-form input[type=text]:focus,.admin-form select:focus{border-color:#27AE60;box-shadow:0 0 0 3px rgba(39,174,96,0.15)}
+.admin-ing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px;}
+.admin-ing-toggle{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:3px;padding:8px 4px;border-radius:10px;border:2px solid var(--border2);background:var(--card);cursor:pointer;transition:var(--trans);user-select:none;font-size:11px;font-weight:600;color:var(--fg3);text-align:center;}
+.admin-ing-toggle .ing-emoji{font-size:18px}
+.admin-ing-toggle.on{border-color:#27AE60;background:rgba(39,174,96,0.1);color:#1A7F5A}
+.admin-ing-toggle:hover{border-color:#27AE60;opacity:0.85}
+.admin-form-actions{display:flex;gap:8px}
+.btn-save{flex:2;padding:10px;border:none;border-radius:30px;background:linear-gradient(135deg,#1A7F5A,#27AE60);color:#fff;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:var(--trans);}
+.btn-save:hover{opacity:0.9;transform:translateY(-1px)}
+.btn-cancel-edit{flex:1;padding:10px;border:2px solid var(--border2);border-radius:30px;background:transparent;color:var(--fg3);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:var(--trans);display:none;}
+.btn-cancel-edit.show{display:block}
+.btn-cancel-edit:hover{border-color:var(--acc);color:var(--acc)}
+.admin-list{display:flex;flex-direction:column;gap:6px}
+.admin-item{display:flex;align-items:center;justify-content:space-between;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;transition:var(--trans);}
+.admin-item:hover{border-color:var(--border2);background:var(--bg3)}
+.admin-item-info{flex:1;min-width:0}
+.admin-item-name{font-weight:600;font-size:13px;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.admin-item-meta{font-size:11px;color:var(--fg3);margin-top:2px}
+.admin-item-btns{display:flex;gap:6px;flex-shrink:0;margin-left:8px}
+.btn-edit-item{background:rgba(108,63,245,0.12);color:#6C3FF5;border:1.5px solid rgba(108,63,245,0.25);border-radius:8px;padding:5px 10px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:var(--trans);}
+.btn-edit-item:hover{background:rgba(108,63,245,0.22)}
+.btn-delete-item{background:rgba(231,76,60,0.1);color:#E74C3C;border:1.5px solid rgba(231,76,60,0.25);border-radius:8px;padding:5px 10px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:var(--trans);}
+.btn-delete-item:hover{background:rgba(231,76,60,0.22)}
+.admin-toast{position:fixed;bottom:calc(90px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(20px);background:#1A1A1A;color:#fff;border-radius:30px;padding:10px 20px;font-size:13px;font-weight:600;opacity:0;transition:all 0.3s ease;z-index:600;white-space:nowrap;pointer-events:none;}
+.admin-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.admin-search{width:100%;padding:9px 12px;border:1.5px solid var(--border2);border-radius:var(--radius-sm);background:var(--card);color:var(--fg);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;transition:var(--trans);margin-bottom:10px;}
+.admin-search:focus{border-color:#27AE60;box-shadow:0 0 0 3px rgba(39,174,96,0.15)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="brand">
+      <div class="brand-icon">T</div>
+      <div class="brand-text">
+        <span class="brand-title">Mapa de Tortas</span>
+        <span class="brand-sub">Ingredientes del menú</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button id="darkToggle" aria-label="Cambiar modo oscuro">☀️</button>
+    </div>
+  </div>
+</header>
+
+<div id="offlineBanner">📵 Sin conexión — modo offline</div>
+
+<main>
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input type="search" id="searchInput" placeholder="Buscar torta…" autocomplete="off" autocorrect="off" aria-label="Buscar torta">
+    <button id="clearSearch" aria-label="Limpiar búsqueda">✕</button>
+  </div>
+
+  <div class="filter-label">Filtrar por ingrediente</div>
+  <div class="filter-chips" id="filterChips">
+    <button class="chip" data-ing="ensalada" aria-label="Filtrar por ensalada de col"><span class="chip-icon">🥗</span>Ensalada</button>
+    <button class="chip" data-ing="lechuga" aria-label="Filtrar por lechuga"><span class="chip-icon">🥬</span>Lechuga</button>
+    <button class="chip" data-ing="jitomate" aria-label="Filtrar por jitomate"><span class="chip-icon">🍅</span>Jitomate</button>
+    <button class="chip" data-ing="cebolla" aria-label="Filtrar por cebolla"><span class="chip-icon">🧅</span>Cebolla</button>
+    <button class="chip" data-ing="aguacate" aria-label="Filtrar por aguacate"><span class="chip-icon">🥑</span>Aguacate</button>
+  </div>
+
+  <div class="controls-row">
+    <div class="counter" id="counter">Mostrando <span id="countShown">0</span> de <span id="countTotal">0</span> tortas</div>
+    <button id="clearAll" aria-label="Limpiar todos los filtros">✕ Limpiar filtros</button>
+  </div>
+
+  <div class="table-wrap">
+    <table role="grid" aria-label="Mapa de ingredientes de tortas">
+      <thead>
+        <tr>
+          <th data-col="nombre" scope="col"><div class="th-inner">Torta <span class="sort-ind" id="si-nombre"></span></div></th>
+          <th data-col="ensalada" scope="col"><div class="th-inner">🥗<br>Ensalada <span class="sort-ind" id="si-ensalada"></span></div></th>
+          <th data-col="lechuga" scope="col"><div class="th-inner">🥬<br>Lechuga <span class="sort-ind" id="si-lechuga"></span></div></th>
+          <th data-col="jitomate" scope="col"><div class="th-inner">🍅<br>Jitomate <span class="sort-ind" id="si-jitomate"></span></div></th>
+          <th data-col="cebolla" scope="col"><div class="th-inner">🧅<br>Cebolla <span class="sort-ind" id="si-cebolla"></span></div></th>
+          <th data-col="aguacate" scope="col"><div class="th-inner">🥑<br>Aguacate <span class="sort-ind" id="si-aguacate"></span></div></th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+</main>
+
+<footer>
+  <strong>Las Tortas</strong> · Mapa de Ingredientes · v2.0
+</footer>
+
+<button id="installBtn" aria-label="Instalar aplicación">📲 Instalar app</button>
+<button id="aiModeBtn" aria-label="Asistente IA">🤖 IA</button>
+<button id="adminBtn" aria-label="Administrar menú" title="Editar menú">⚙️</button>
+<div class="admin-toast" id="adminToast"></div>
+
+<!-- AI MODAL -->
+<div id="aiModal" role="dialog" aria-modal="true" aria-label="Asistente IA">
+  <div class="ai-panel">
+    <button class="ai-close-btn" id="aiClose" aria-label="Cerrar">✕</button>
+    <div class="ai-tabs">
+      <button class="ai-tab active" id="tabAsistente">🎙️ Asistente</button>
+      <button class="ai-tab" id="tabDictado">📝 Dictado</button>
+    </div>
+    <div class="ai-body" id="panelAsistente">
+      <button class="ai-listen-ring" id="aiListenBtn" aria-label="Hablar con asistente">🎙️</button>
+      <p class="ai-hint" id="aiHint">Toca y pregunta:<br>"¿Qué lleva la cubana?" o "¿Cuál lleva aguacate?"</p>
+      <div class="ai-transcript-box" id="aiTranscript" style="display:none"></div>
+      <div class="ai-response-box" id="aiResponseBox" style="display:none"></div>
+      <button class="ai-speak-btn" id="aiSpeakBtn">🔊 Escuchar respuesta</button>
+    </div>
+    <div class="ai-body" id="panelDictado" style="display:none">
+      <button class="dict-ring" id="dictBtn" aria-label="Iniciar dictado">🎤</button>
+      <p class="ai-hint" id="dictHint">Toca y dicta. Puedes pausar y continuar.</p>
+      <textarea class="dict-raw" id="dictRaw" placeholder="Tu dictado aparecerá aquí… o escribe directamente." rows="4"></textarea>
+      <div class="dict-actions">
+        <button class="dict-btn dict-btn-clear" id="dictClear">🗑️ Borrar</button>
+        <button class="dict-btn dict-btn-summarize" id="dictSummarize" disabled>✨ Organizar</button>
+      </div>
+      <div class="dict-summary" id="dictSummary" style="display:none"></div>
+      <button class="dict-speak-btn" id="dictSpeakBtn">🔊 Escuchar resumen</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN MODAL -->
+<div id="adminModal" role="dialog" aria-modal="true" aria-label="Administrar menú">
+  <div class="admin-panel">
+    <div class="admin-header">
+      <h2>⚙️ Administrar Menú</h2>
+      <button class="admin-close-btn" id="adminClose" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="admin-body">
+      <div class="admin-section-title" id="formTitle">➕ Agregar Torta</div>
+      <div class="admin-form">
+        <input type="hidden" id="editIndex" value="">
+        <label>Nombre de la torta</label>
+        <input type="text" id="adminNombre" placeholder="Ej: Chilaquil Especial" autocomplete="off">
+        <label>Sección</label>
+        <select id="adminSeccion">
+          <option value="plancha">🔥 A la Plancha</option>
+          <option value="banados">🫗 Bañados y Desayunos</option>
+        </select>
+        <label>Ingredientes</label>
+        <div class="admin-ing-grid">
+          <div class="admin-ing-toggle" data-ing="ensalada" id="tog-ensalada"><span class="ing-emoji">🥗</span>Ensalada</div>
+          <div class="admin-ing-toggle" data-ing="lechuga" id="tog-lechuga"><span class="ing-emoji">🥬</span>Lechuga</div>
+          <div class="admin-ing-toggle" data-ing="jitomate" id="tog-jitomate"><span class="ing-emoji">🍅</span>Jitomate</div>
+          <div class="admin-ing-toggle" data-ing="cebolla" id="tog-cebolla"><span class="ing-emoji">🧅</span>Cebolla</div>
+          <div class="admin-ing-toggle" data-ing="aguacate" id="tog-aguacate"><span class="ing-emoji">🥑</span>Aguacate</div>
+        </div>
+        <div class="admin-form-actions">
+          <button class="btn-save" id="btnSaveTorta">💾 Guardar</button>
+          <button class="btn-cancel-edit" id="btnCancelEdit">✕ Cancelar</button>
+        </div>
+      </div>
+      <div class="admin-section-title">📋 Tortas en el menú (<span id="adminCount">0</span>)</div>
+      <input class="admin-search" type="search" id="adminSearch" placeholder="Filtrar lista…" autocomplete="off">
+      <div class="admin-list" id="adminList"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const MENU=[
+{nombre:"Alemana",seccion:"plancha",i:{ensalada:0,lechuga:1,jitomate:1,cebolla:0,aguacate:1}},
+{nombre:"Americana",seccion:"plancha",i:{ensalada:0,lechuga:1,jitomate:1,cebolla:1,aguacate:1}},
+{nombre:"Argentina",seccion:"plancha",i:{ensalada:0,lechuga:1,jitomate:1,cebolla:1,aguacate:1}},
+{nombre:"Brasileña",seccion:"plancha",i:{ensalada:0,lechuga:1,jitomate:1,cebolla:0,aguacate:1}},
+{nombre:"Cubana (cerdo/pollo/lomo)",seccion:"plancha",i:{ensalada:1,lechuga:0,jitomate:1,cebolla:1,aguacate:1}},
+{nombre:"Cubana (res/arrachera/camarón)",seccion:"plancha",i:{ensalada:1,lechuga:0,jitomate:1,cebolla:1,aguacate:1}},
+{nombre:"Hawaiana",seccion:"plancha",i:{ensalada:0,lechuga:1,jitomate:1,cebolla:1,aguacate:1}},
+{nombre:"Latina",seccion:"plancha",i:{ensalada:0,lechuga:1,jitomate:1,cebolla:1,aguacate:1}},
+{nombre:"Light",seccion:"plancha",i:{ensalada:0,lechuga:0,jitomate:1,cebolla:0,aguacate:1}},
+{nombre:"Marinera",seccion:"plancha",i:{ensalada:1,lechuga:0,jitomate:1,cebolla:0,aguacate:1}},
+{nombre:"Mexicana",seccion:"plancha",i:{ensalada:0,lechuga:1,jitomate:1,cebolla:0,aguacate:1}},
+{nombre:"Súper Cubana (cerdo/pollo/lomo)",seccion:"plancha",i:{ensalada:1,lechuga:0,jitomate:1,cebolla:1,aguacate:1}},
+{nombre:"Súper Cubana (res/arrachera/cam.)",seccion:"plancha",i:{ensalada:1,lechuga:0,jitomate:1,cebolla:1,aguacate:1}},
+{nombre:"Tapatía",seccion:"plancha",i:{ensalada:0,lechuga:1,jitomate:1,cebolla:1,aguacate:1}},
+{nombre:"Toluqueña",seccion:"plancha",i:{ensalada:0,lechuga:1,jitomate:1,cebolla:1,aguacate:1}},
+{nombre:"Vaquera",seccion:"plancha",i:{ensalada:1,lechuga:0,jitomate:1,cebolla:0,aguacate:1}},
+{nombre:"Vegetariana",seccion:"plancha",i:{ensalada:1,lechuga:0,jitomate:1,cebolla:1,aguacate:1}},
+{nombre:"Yucateca",seccion:"plancha",i:{ensalada:0,lechuga:1,jitomate:1,cebolla:1,aguacate:1}},
+{nombre:"Lonche Bañado",seccion:"banados",i:{ensalada:0,lechuga:0,jitomate:1,cebolla:1,aguacate:1}},
+{nombre:"Santuario",seccion:"banados",i:{ensalada:0,lechuga:1,jitomate:1,cebolla:1,aguacate:0}},
+{nombre:"Torta Ahogada",seccion:"banados",i:{ensalada:0,lechuga:0,jitomate:1,cebolla:0,aguacate:1}},
+{nombre:"Torta Ahogada Camarón",seccion:"banados",i:{ensalada:0,lechuga:0,jitomate:1,cebolla:0,aguacate:1}},
+{nombre:"Torta Chilaquil",seccion:"banados",i:{ensalada:0,lechuga:0,jitomate:0,cebolla:1,aguacate:1}},
+{nombre:"Torta Huevo Chorizo",seccion:"banados",i:{ensalada:0,lechuga:0,jitomate:1,cebolla:1,aguacate:1}},
+{nombre:"Torta Huevo Jamón",seccion:"banados",i:{ensalada:0,lechuga:0,jitomate:1,cebolla:1,aguacate:1}},
+{nombre:"Torta Huevo Tocino",seccion:"banados",i:{ensalada:0,lechuga:0,jitomate:1,cebolla:1,aguacate:1}}
+];
+
+function makeIcon(size){
+  const c=document.createElement('canvas');c.width=size;c.height=size;
+  const ctx=c.getContext('2d');const r=size*0.18;
+  ctx.beginPath();ctx.moveTo(r,0);ctx.lineTo(size-r,0);ctx.quadraticCurveTo(size,0,size,r);
+  ctx.lineTo(size,size-r);ctx.quadraticCurveTo(size,size,size-r,size);
+  ctx.lineTo(r,size);ctx.quadraticCurveTo(0,size,0,size-r);
+  ctx.lineTo(0,r);ctx.quadraticCurveTo(0,0,r,0);ctx.closePath();
+  const g=ctx.createLinearGradient(0,0,size,size);
+  g.addColorStop(0,'#E8611A');g.addColorStop(1,'#F5A623');
+  ctx.fillStyle=g;ctx.fill();ctx.fillStyle='#fff';
+  ctx.font=`bold ${size*0.5}px 'Bebas Neue',Arial`;
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('T',size/2,size/2+size*0.03);
+  return c.toDataURL('image/png');
+}
+const icon192=makeIcon(192);const icon512=makeIcon(512);
+const manifest={name:"Mapa de Tortas",short_name:"Tortas",description:"Mapa interactivo de ingredientes del menú de tortas",start_url:".",display:"standalone",orientation:"portrait-primary",background_color:"#FFF8F0",theme_color:"#E8611A",icons:[{src:icon192,sizes:"192x192",type:"image/png"},{src:icon512,sizes:"512x512",type:"image/png"}]};
+const mBlob=new Blob([JSON.stringify(manifest)],{type:'application/json'});
+document.getElementById('manifest-link').href=URL.createObjectURL(mBlob);
+
+let state={query:'',filters:{ensalada:0,lechuga:0,jitomate:0,cebolla:0,aguacate:0},sortCol:'',sortDir:1};
+const INGS=['ensalada','lechuga','jitomate','cebolla','aguacate'];
+
+function filterData(){
+  let data=MENU.filter(t=>{
+    const q=state.query.toLowerCase().trim();
+    if(q&&!t.nombre.toLowerCase().includes(q))return false;
+    for(const k of INGS){if(state.filters[k]&&!t.i[k])return false;}
+    return true;
+  });
+  if(state.sortCol){
+    const col=state.sortCol;
+    data=[...data].sort((a,b)=>{
+      let va,vb;
+      if(col==='nombre'){va=a.nombre.toLowerCase();vb=b.nombre.toLowerCase();return va<vb?-state.sortDir:va>vb?state.sortDir:0;}
+      va=a.i[col]||0;vb=b.i[col]||0;return (vb-va)*state.sortDir;
+    });
+  }
+  return data;
+}
+
+function renderTable(){
+  const data=filterData();
+  const tbody=document.getElementById('tableBody');
+  const hasFilters=state.query||INGS.some(k=>state.filters[k]);
+  const showSections=!state.sortCol&&!hasFilters;
+  if(data.length===0){
+    tbody.innerHTML=`<tr><td colspan="6"><div class="empty"><div class="empty-icon">🫙</div><div class="empty-title">Sin resultados</div><div class="empty-sub">Intenta con otros filtros o búsqueda</div></div></td></tr>`;
+    return;
+  }
+  let html='';let lastSec='';
+  data.forEach((t,idx)=>{
+    if(showSections&&t.seccion!==lastSec){
+      lastSec=t.seccion;
+      const label=t.seccion==='plancha'?'🔥 A la Plancha':'🫗 Bañados y Desayunos';
+      html+=`<tr class="section-row"><td colspan="6">${label}</td></tr>`;
+    }
+    const delay=idx*28;
+    html+=`<tr style="animation-delay:${delay}ms">`;
+    html+=`<td>${t.nombre}</td>`;
+    INGS.forEach(k=>{
+      html+=t.i[k]?`<td><span class="cell-check" style="animation-delay:${delay+80}ms">✔</span></td>`:`<td><span class="cell-none">—</span></td>`;
+    });
+    html+='</tr>';
+  });
+  tbody.innerHTML=html;
+  renderCounter(data.length);
+}
+
+function renderCounter(shown){
+  document.getElementById('countShown').textContent=shown;
+  document.getElementById('countTotal').textContent=MENU.length;
+}
+
+function renderFilters(){
+  document.querySelectorAll('.chip').forEach(btn=>{
+    const k=btn.dataset.ing;btn.classList.toggle('active',!!state.filters[k]);
+  });
+  const hasAny=state.query||INGS.some(k=>state.filters[k]);
+  document.getElementById('clearAll').classList.toggle('show',!!hasAny);
+  document.getElementById('clearSearch').classList.toggle('show',!!state.query);
+}
+
+function renderSortIndicators(){
+  INGS.concat('nombre').forEach(col=>{
+    const el=document.getElementById('si-'+col);if(!el)return;
+    if(state.sortCol===col){el.textContent=state.sortDir===1?'↑':'↓';el.classList.add('active');}
+    else{el.textContent='';el.classList.remove('active');}
+  });
+}
+
+function render(){renderFilters();renderSortIndicators();renderTable();}
+
+document.getElementById('searchInput').addEventListener('input',e=>{state.query=e.target.value;render();window.scrollTo({top:0,behavior:'smooth'});});
+document.getElementById('clearSearch').addEventListener('click',()=>{state.query='';document.getElementById('searchInput').value='';render();});
+document.getElementById('filterChips').addEventListener('click',e=>{
+  const btn=e.target.closest('.chip');if(!btn)return;
+  const k=btn.dataset.ing;state.filters[k]=state.filters[k]?0:1;render();
+});
+document.getElementById('clearAll').addEventListener('click',()=>{
+  state.query='';INGS.forEach(k=>state.filters[k]=0);
+  document.getElementById('searchInput').value='';render();window.scrollTo({top:0,behavior:'smooth'});
+});
+document.querySelectorAll('thead th[data-col]').forEach(th=>{
+  th.addEventListener('click',()=>{
+    const col=th.dataset.col;
+    if(state.sortCol===col)state.sortDir*=-1;else{state.sortCol=col;state.sortDir=1;}
+    render();
+  });
+});
+
+const darkToggle=document.getElementById('darkToggle');
+function applyTheme(dark){
+  document.documentElement.setAttribute('data-theme',dark?'dark':'light');
+  darkToggle.textContent=dark?'🌙':'☀️';
+  document.querySelector('meta[name="theme-color"]').content=dark?'#0F0F0F':'#E8611A';
+}
+let isDark=localStorage.getItem('theme')==='dark';
+applyTheme(isDark);
+darkToggle.addEventListener('click',()=>{
+  darkToggle.classList.remove('spin');void darkToggle.offsetWidth;
+  darkToggle.classList.add('spin');
+  isDark=!isDark;localStorage.setItem('theme',isDark?'dark':'light');applyTheme(isDark);
+});
+
+window.addEventListener('online',()=>document.getElementById('offlineBanner').classList.remove('show'));
+window.addEventListener('offline',()=>document.getElementById('offlineBanner').classList.add('show'));
+if(!navigator.onLine)document.getElementById('offlineBanner').classList.add('show');
+
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;document.getElementById('installBtn').classList.add('show');});
+document.getElementById('installBtn').addEventListener('click',()=>{if(deferredPrompt){deferredPrompt.prompt();deferredPrompt.userChoice.then(()=>{deferredPrompt=null;document.getElementById('installBtn').classList.remove('show');});}});
+window.addEventListener('appinstalled',()=>document.getElementById('installBtn').classList.remove('show'));
+
+render();
+
+/* ===== AI ASSISTANT ===== */
+(function(){
+  const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+  const ING_LABELS={ensalada:'Ensalada de col',lechuga:'Lechuga',jitomate:'Jitomate',cebolla:'Cebolla',aguacate:'Aguacate'};
+  const ING_KEYS=['ensalada','lechuga','jitomate','cebolla','aguacate'];
+  const aiModal=document.getElementById('aiModal');
+  const aiClose=document.getElementById('aiClose');
+  const aiModeBtn=document.getElementById('aiModeBtn');
+  const tabAsistente=document.getElementById('tabAsistente');
+  const tabDictado=document.getElementById('tabDictado');
+  const panelAsistente=document.getElementById('panelAsistente');
+  const panelDictado=document.getElementById('panelDictado');
+  const aiListenBtn=document.getElementById('aiListenBtn');
+  const aiHint=document.getElementById('aiHint');
+  const aiTranscript=document.getElementById('aiTranscript');
+  const aiResponseBox=document.getElementById('aiResponseBox');
+  const aiSpeakBtn=document.getElementById('aiSpeakBtn');
+  const dictBtn=document.getElementById('dictBtn');
+  const dictHint=document.getElementById('dictHint');
+  const dictRaw=document.getElementById('dictRaw');
+  const dictClear=document.getElementById('dictClear');
+  const dictSummarize=document.getElementById('dictSummarize');
+  const dictSummary=document.getElementById('dictSummary');
+  const dictSpeakBtn=document.getElementById('dictSpeakBtn');
+  let lastSpeakText='';let lastDictSpeakText='';
+
+  aiModeBtn.addEventListener('click',()=>aiModal.classList.add('show'));
+  aiClose.addEventListener('click',()=>aiModal.classList.remove('show'));
+  aiModal.addEventListener('click',e=>{if(e.target===aiModal)aiModal.classList.remove('show');});
+
+  function switchTab(tab){
+    panelAsistente.style.display=tab==='asistente'?'':'none';
+    panelDictado.style.display=tab==='dictado'?'':'none';
+    tabAsistente.classList.toggle('active',tab==='asistente');
+    tabDictado.classList.toggle('active',tab==='dictado');
+  }
+  tabAsistente.addEventListener('click',()=>switchTab('asistente'));
+  tabDictado.addEventListener('click',()=>switchTab('dictado'));
+
+  function norm(s){return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();}
+
+  function findTorta(query){
+    const q=norm(query);let best=null,bestScore=0;
+    for(const t of MENU){
+      const n=norm(t.nombre);let score=0;
+      if(n===q)score=100;
+      else if(n.includes(q)||q.includes(n))score=80;
+      else{const qw=q.split(' ').filter(w=>w.length>2);const nw=n.split(' ');let hits=qw.filter(w=>nw.some(nww=>nww.includes(w)||w.includes(nww)));score=hits.length*25;}
+      if(score>bestScore){bestScore=score;best=t;}
+    }
+    return bestScore>=20?best:null;
+  }
+
+  function detectIngredientQuestion(query){
+    const q=norm(query);
+    for(const [key,label] of Object.entries(ING_LABELS)){
+      const aliases={ensalada:['ensalada','col'],lechuga:['lechuga'],jitomate:['jitomate','tomate'],cebolla:['cebolla'],aguacate:['aguacate','palta']};
+      if((aliases[key]||[norm(label)]).some(a=>q.includes(a)))return key;
+    }
+    return null;
+  }
+
+  function detectSection(query){
+    const q=norm(query);
+    if(q.includes('plancha')||q.includes('asada'))return 'plancha';
+    if(q.includes('bana')||q.includes('ahogad')||q.includes('desayuno'))return 'banados';
+    return null;
+  }
+
+  function buildResponse(query){
+    const q=norm(query);
+    const torta=findTorta(query);
+    if(torta){
+      const present=ING_KEYS.filter(k=>torta.i[k]);const absent=ING_KEYS.filter(k=>!torta.i[k]);
+      const chipsPresent=present.map(k=>`<span class="ai-ing-chip">✔ ${ING_LABELS[k]}</span>`).join('');
+      const chipsAbsent=absent.map(k=>`<span class="ai-no-ing">${ING_LABELS[k]}</span>`).join('');
+      const secLabel=torta.seccion==='plancha'?'A la plancha':'Bañados / Desayunos';
+      const speakText='La '+torta.nombre+' lleva: '+(present.map(k=>ING_LABELS[k]).join(', ')||'ningún ingrediente especial')+'. No lleva: '+(absent.map(k=>ING_LABELS[k]).join(', '))+'.';
+      return {html:`<div class="ai-torta-name">${torta.nombre}</div><p style="font-size:11px;color:var(--fg3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">${secLabel}</p><p style="font-size:12px;color:var(--fg3);margin-bottom:6px"><strong>Lleva:</strong></p><div>${chipsPresent||'<span style="color:var(--fg3);font-size:13px">Ninguno registrado</span>'}</div><p style="font-size:12px;color:var(--fg3);margin:8px 0 4px"><strong>No lleva:</strong></p><div>${chipsAbsent}</div>`,speakText};
+    }
+    const ing=detectIngredientQuestion(query);
+    if(ing){
+      const conIng=MENU.filter(t=>t.i[ing]);
+      const listCon=conIng.map(t=>`<span class="ai-ing-chip" style="margin:2px">✔ ${t.nombre}</span>`).join('');
+      return {html:`<p style="font-size:12px;color:var(--fg3);margin-bottom:8px">Tortas con <strong style="color:#6C3FF5">${ING_LABELS[ing]}</strong> (${conIng.length} de ${MENU.length}):</p><div>${listCon}</div>`,speakText:'Con '+ING_LABELS[ing]+' hay '+conIng.length+' tortas: '+conIng.map(t=>t.nombre).join(', ')+'.'};
+    }
+    const sec=detectSection(query);
+    if(sec){
+      const tortas=MENU.filter(t=>t.seccion===sec);const label=sec==='plancha'?'A la Plancha':'Bañados y Desayunos';
+      const list=tortas.map(t=>`<span class="ai-ing-chip" style="margin:2px">${t.nombre}</span>`).join('');
+      return {html:`<p style="font-size:12px;color:var(--fg3);margin-bottom:8px"><strong style="color:#6C3FF5">${label}</strong> — ${tortas.length} tortas:</p><div>${list}</div>`,speakText:'En '+label+' hay: '+tortas.map(t=>t.nombre).join(', ')+'.'};
+    }
+    if(q.includes('cuantas')||q.includes('total')||q.includes('menu')||q.includes('opciones')){
+      const plancha=MENU.filter(t=>t.seccion==='plancha').length;const banados=MENU.filter(t=>t.seccion==='banados').length;
+      return {html:`<p style="font-size:14px;color:var(--fg);line-height:1.7">Hay <strong style="color:#6C3FF5">${MENU.length} tortas</strong> en el menú:<br>🔥 <strong>${plancha}</strong> a la plancha<br>🫗 <strong>${banados}</strong> bañados y desayunos</p>`,speakText:`Hay ${MENU.length} tortas en total: ${plancha} a la plancha y ${banados} bañados y desayunos.`};
+    }
+    return {html:`<p style="font-size:13px;color:var(--fg3);line-height:1.6">No encontré esa torta. Prueba diciendo el nombre exacto, como:<br><strong style="color:#6C3FF5">"cubana", "marinera", "ahogada"</strong><br>O pregunta: <strong style="color:#6C3FF5">"¿qué lleva aguacate?"</strong></p>`,speakText:'No encontré esa torta. Prueba con el nombre exacto del menú.'};
+  }
+
+  function speak(text,lang='es-MX'){
+    if(!window.speechSynthesis)return;
+    const u=new SpeechSynthesisUtterance(text);u.lang=lang;u.rate=0.92;u.pitch=1.05;
+    window.speechSynthesis.cancel();window.speechSynthesis.speak(u);
+  }
+
+  let aiListening=false;let aiRecog=null;
+  if(SpeechRecognition){
+    aiRecog=new SpeechRecognition();aiRecog.lang='es-MX';aiRecog.continuous=false;aiRecog.interimResults=true;aiRecog.maxAlternatives=3;
+    aiRecog.onresult=function(e){
+      let interim='',final_text='';
+      for(let i=e.resultIndex;i<e.results.length;i++){const t=e.results[i][0].transcript;if(e.results[i].isFinal)final_text+=t;else interim+=t;}
+      const current=final_text||interim;aiTranscript.style.display='';aiTranscript.textContent='"'+current+'"';
+      if(final_text){stopAiListening();const {html,speakText}=buildResponse(final_text);aiResponseBox.style.display='';aiResponseBox.innerHTML=html;lastSpeakText=speakText;aiSpeakBtn.classList.add('show');speak(speakText);}
+    };
+    aiRecog.onerror=function(e){stopAiListening();const msg=e.error==='not-allowed'?'Activa el micrófono en ajustes del navegador':'No se detectó voz. Intenta de nuevo.';aiResponseBox.style.display='';aiResponseBox.innerHTML=`<p style="color:var(--fg3);font-size:13px">⚠️ ${msg}</p>`;};
+    aiRecog.onend=function(){if(aiListening)stopAiListening();};
+  } else {aiListenBtn.textContent='🚫';aiHint.textContent='Tu navegador no soporta reconocimiento de voz. Usa Chrome.';}
+
+  function startAiListening(){if(!aiRecog||aiListening)return;aiListening=true;aiListenBtn.classList.add('listening');aiHint.textContent='Escuchando… habla ahora 🎙️';aiTranscript.style.display='none';aiResponseBox.style.display='none';aiSpeakBtn.classList.remove('show');try{aiRecog.start();}catch(e){stopAiListening();}}
+  function stopAiListening(){if(!aiListening)return;aiListening=false;aiListenBtn.classList.remove('listening');aiHint.textContent='Toca y pregunta: "¿Qué lleva la cubana?"';try{aiRecog.stop();}catch(e){}}
+  aiListenBtn.addEventListener('click',()=>{if(aiListening)stopAiListening();else startAiListening();});
+  aiSpeakBtn.addEventListener('click',()=>speak(lastSpeakText));
+
+  let dictListening=false;let dictRecog=null;let dictAccumulated='';
+  if(SpeechRecognition){
+    dictRecog=new SpeechRecognition();dictRecog.lang='es-MX';dictRecog.continuous=true;dictRecog.interimResults=true;dictRecog.maxAlternatives=1;
+    dictRecog.onresult=function(e){let interim='';for(let i=e.resultIndex;i<e.results.length;i++){const t=e.results[i][0].transcript;if(e.results[i].isFinal)dictAccumulated+=t+' ';else interim=t;}dictRaw.value=(dictAccumulated+interim).trim();dictSummarize.disabled=!dictRaw.value.trim();};
+    dictRecog.onerror=function(e){stopDictListening();dictHint.textContent=e.error==='not-allowed'?'⚠️ Activa el micrófono':'⚠️ Error de audio. Intenta de nuevo.';};
+    dictRecog.onend=function(){if(dictListening)stopDictListening();};
+  } else {dictBtn.textContent='🚫';dictHint.textContent='Tu navegador no soporta dictado. Escribe directamente.';}
+
+  function startDictListening(){if(!dictRecog||dictListening)return;dictListening=true;dictAccumulated=dictRaw.value?dictRaw.value.trim()+' ':'';dictBtn.classList.add('listening');dictHint.textContent='Dictando… habla en voz alta 🎤 (toca para pausar)';try{dictRecog.start();}catch(e){stopDictListening();}}
+  function stopDictListening(){if(!dictListening)return;dictListening=false;dictBtn.classList.remove('listening');dictHint.textContent='Pausado. Toca para continuar o edita el texto.';try{dictRecog.stop();}catch(e){}}
+  dictBtn.addEventListener('click',()=>{if(dictListening)stopDictListening();else startDictListening();});
+  dictRaw.addEventListener('input',()=>{dictSummarize.disabled=!dictRaw.value.trim();});
+  dictClear.addEventListener('click',()=>{dictRaw.value='';dictAccumulated='';dictSummary.style.display='none';dictSpeakBtn.classList.remove('show');dictSummarize.disabled=true;dictHint.textContent='Toca y dicta. Puedes pausar y continuar.';});
+
+  function localSummarize(text){
+    let clean=text.trim().replace(/\s+/g,' ');
+    const rawSentences=clean.split(/[.;,\n]+/).map(s=>s.trim()).filter(s=>s.length>6);
+    const seen=new Set();const sentences=[];
+    for(const s of rawSentences){const key=norm(s).replace(/\s/g,'').substring(0,30);if(!seen.has(key)){seen.add(key);sentences.push(s);}}
+    const bullets=sentences.slice(0,6).map(s=>{let r=s.trim();if(r.length>0)r=r[0].toUpperCase()+r.slice(1);if(!r.endsWith('.')&&!r.endsWith('?')&&!r.endsWith('!'))r+='.';return r;});
+    return {bullets,corrected:bullets.slice(0,2).join(' ')};
+  }
+
+  dictSummarize.addEventListener('click',()=>{
+    const text=dictRaw.value.trim();if(!text)return;
+    dictSummary.style.display='';dictSummary.innerHTML='<div class="ai-loading"><div class="ai-loading-dot"></div><div class="ai-loading-dot"></div><div class="ai-loading-dot"></div></div>';dictSpeakBtn.classList.remove('show');
+    setTimeout(()=>{
+      const {bullets,corrected}=localSummarize(text);const liItems=bullets.map(b=>`<li>${b}</li>`).join('');
+      dictSummary.innerHTML=`<h4>✨ Puntos clave</h4><ul>${liItems}</ul>${corrected?`<div class="dict-corrected"><strong>Resumen:</strong> ${corrected}</div>`:''}`;
+      lastDictSpeakText='Resumen: '+bullets.join(' ');dictSpeakBtn.classList.add('show');
+    },600);
+  });
+  dictSpeakBtn.addEventListener('click',()=>speak(lastDictSpeakText));
+})();
+
+/* ===== ADMIN PANEL ===== */
+(function(){
+  const ING_KEYS=['ensalada','lechuga','jitomate','cebolla','aguacate'];
+  const ING_LABELS={ensalada:'Ensalada',lechuga:'Lechuga',jitomate:'Jitomate',cebolla:'Cebolla',aguacate:'Aguacate'};
+
+  function loadMenu(){
+    try{const saved=localStorage.getItem('tortas-menu');if(saved){const parsed=JSON.parse(saved);if(Array.isArray(parsed)&&parsed.length>0){MENU.length=0;parsed.forEach(t=>MENU.push(t));}}}catch(e){}
+  }
+  function saveMenu(){try{localStorage.setItem('tortas-menu',JSON.stringify(MENU));}catch(e){}}
+
+  loadMenu();render();
+
+  const adminModal=document.getElementById('adminModal');
+  const adminBtn=document.getElementById('adminBtn');
+  const adminClose=document.getElementById('adminClose');
+  const adminList=document.getElementById('adminList');
+  const adminCount=document.getElementById('adminCount');
+  const adminSearch=document.getElementById('adminSearch');
+  const formTitle=document.getElementById('formTitle');
+  const adminNombre=document.getElementById('adminNombre');
+  const adminSeccion=document.getElementById('adminSeccion');
+  const editIndex=document.getElementById('editIndex');
+  const btnSaveTorta=document.getElementById('btnSaveTorta');
+  const btnCancelEdit=document.getElementById('btnCancelEdit');
+  const toast=document.getElementById('adminToast');
+
+  const togState={ensalada:0,lechuga:0,jitomate:0,cebolla:0,aguacate:0};
+  ING_KEYS.forEach(k=>{
+    const el=document.getElementById('tog-'+k);
+    el.addEventListener('click',()=>{togState[k]=togState[k]?0:1;el.classList.toggle('on',!!togState[k]);});
+  });
+
+  function setToggles(ingObj){ING_KEYS.forEach(k=>{togState[k]=ingObj[k]||0;document.getElementById('tog-'+k).classList.toggle('on',!!togState[k]);});}
+
+  function resetForm(){
+    editIndex.value='';adminNombre.value='';adminSeccion.value='plancha';
+    setToggles({ensalada:0,lechuga:0,jitomate:0,cebolla:0,aguacate:0});
+    formTitle.textContent='➕ Agregar Torta';btnCancelEdit.classList.remove('show');btnSaveTorta.textContent='💾 Guardar';
+  }
+
+  function showToast(msg,color='#1A7F5A'){toast.textContent=msg;toast.style.background=color;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),2200);}
+
+  let adminFilter='';
+
+  function renderAdminList(){
+    const q=adminFilter.toLowerCase().trim();
+    const filtered=MENU.map((t,i)=>({t,i})).filter(({t})=>!q||t.nombre.toLowerCase().includes(q));
+    adminCount.textContent=MENU.length;
+    if(filtered.length===0){adminList.innerHTML='<div style="text-align:center;padding:24px;color:var(--fg3);font-size:13px">Sin resultados</div>';return;}
+    adminList.innerHTML=filtered.map(({t,i})=>{
+      const ings=ING_KEYS.filter(k=>t.i[k]).map(k=>ING_LABELS[k]).join(', ')||'Sin ingredientes';
+      const secLabel=t.seccion==='plancha'?'🔥 Plancha':'🫗 Bañados';
+      return `<div class="admin-item"><div class="admin-item-info"><div class="admin-item-name" title="${t.nombre}">${t.nombre}</div><div class="admin-item-meta">${secLabel} · ${ings}</div></div><div class="admin-item-btns"><button class="btn-edit-item" data-idx="${i}" aria-label="Editar">✏️</button><button class="btn-delete-item" data-idx="${i}" aria-label="Borrar">🗑️</button></div></div>`;
+    }).join('');
+
+    adminList.querySelectorAll('.btn-edit-item').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const idx=parseInt(btn.dataset.idx);const t=MENU[idx];
+        editIndex.value=idx;adminNombre.value=t.nombre;adminSeccion.value=t.seccion;setToggles(t.i);
+        formTitle.textContent='✏️ Editar Torta';btnCancelEdit.classList.add('show');btnSaveTorta.textContent='💾 Actualizar';
+        adminNombre.focus();document.querySelector('.admin-panel').scrollTo({top:0,behavior:'smooth'});
+      });
+    });
+
+    adminList.querySelectorAll('.btn-delete-item').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const idx=parseInt(btn.dataset.idx);const name=MENU[idx].nombre;
+        if(!confirm(`¿Eliminar "${name}" del menú?`))return;
+        MENU.splice(idx,1);saveMenu();render();renderAdminList();
+        if(parseInt(editIndex.value)===idx)resetForm();
+        showToast(`🗑️ "${name}" eliminada`,'#E74C3C');
+      });
+    });
+  }
+
+  btnSaveTorta.addEventListener('click',()=>{
+    const nombre=adminNombre.value.trim();
+    if(!nombre){adminNombre.focus();showToast('⚠️ Escribe el nombre de la torta','#E67E22');return;}
+    const seccion=adminSeccion.value;const i={};ING_KEYS.forEach(k=>i[k]=togState[k]);
+    const idx=editIndex.value!==''?parseInt(editIndex.value):-1;
+    if(idx>=0){MENU[idx]={nombre,seccion,i};showToast(`✅ "${nombre}" actualizada`);}
+    else{MENU.push({nombre,seccion,i});showToast(`✅ "${nombre}" agregada`);}
+    saveMenu();render();renderAdminList();resetForm();
+  });
+
+  btnCancelEdit.addEventListener('click',resetForm);
+  adminSearch.addEventListener('input',e=>{adminFilter=e.target.value;renderAdminList();});
+
+  adminBtn.addEventListener('click',()=>{
+    resetForm();adminFilter='';adminSearch.value='';renderAdminList();
+    adminModal.classList.add('show');setTimeout(()=>adminNombre.focus(),350);
+  });
+  adminClose.addEventListener('click',()=>adminModal.classList.remove('show'));
+  adminModal.addEventListener('click',e=>{if(e.target===adminModal)adminModal.classList.remove('show');});
+  adminNombre.addEventListener('keydown',e=>{if(e.key==='Enter')btnSaveTorta.click();});
+})();
+</script>
+</body>
+</html>
